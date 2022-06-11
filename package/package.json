@@ -6,8 +6,18 @@
 	"exports": {
 		".": "./main.js"
 	},
-	"devDependencies": {
+	"scripts": {
+		"minor": "npm run minor:pre && npm publish",
+		"minor:pre": "npm version minor",
+		"patch": "npm run patch:pre && npm publish",
+		"patch:pre": "npm version patch",
+		"push": "cd .. && npm run push"
+	},
+	"dependencies": {
 		"@signalchain/utils": "^0.9.0",
+		"picocolors": "^1.0.0"
+	},
+	"devDependencies": {
 		"@types/node": "^17.0.42",
 		"@typescript-eslint/eslint-plugin": "^5.19.0",
 		"@typescript-eslint/parser": "^5.19.0",
@@ -18,7 +28,6 @@
 		"eslint-plugin-json": "^3.1.0",
 		"eslint-plugin-node": "^11.1.0",
 		"eslint-plugin-prettier": "^4.0.0",
-		"picocolors": "^1.0.0",
 		"prettier": "^2.6.2",
 		"tslib": "^2.3.1",
 		"typescript": "^4.6.3"

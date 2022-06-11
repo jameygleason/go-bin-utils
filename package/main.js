@@ -110,17 +110,23 @@ async function runBuildCMD(inputDir, binDirPath, subDir, platform, arch, binPath
  * @param {string} cwd - current working directory
  * @param {Array<string>} args - command options
  * @param {string} logName - prefix logs (ex. [compiler])
+ * @param {number} [spaceMultiplier] - pass a number to be multiplied by 2048 to increase potential RAM availability
  * @return {[stdout, stderr]}
  */
-export function runPlatformBin(cmd, cwd, args, logName) {
+export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 8) {
 	const goos = PLATFORM_MAPPING[os.platform()]
 	const goarch = ARCH_MAPPING[os.arch()]
 	const subDir = `${goos}-${goarch}`
-	const binPath = path.join(cwd, subDir, cmd)
+	const binPath = path.join(cwd, subDir)
 
-	const { stdout, stderr } = spawnSync(binPath, args, {
-		cwd,
-	})
+	const { stdout, stderr } = spawnSync(
+		path.join(binPath, cmd),
+		[`--max-old-space-size=${2048 * spaceMultiplier}`, ...args],
+		{
+			maxBuffer: 4096,
+			cwd,
+		},
+	)
 	if (!!stdout?.toString() === true) {
 		process.stdout.write(`${clr.blue(logName)} ${stdout.toString()}\n`)
 	}

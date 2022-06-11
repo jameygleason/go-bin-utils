@@ -32,8 +32,9 @@ const ARCH_MAPPING = {
  * @param {string} destDir - directory for built binaries
  * @param {string} binName - directory for built binaries
  * @param {boolean} dev - env is development
+ * @param {number} [spaceMultiplier] - pass a number to be multiplied by 2048 to increase potential RAM availability
  */
-export default async function buildBinary(inputDir, destDir, binName, dev) {
+export default async function buildBinary(inputDir, destDir, binName, dev, spaceMultiplier = 16) {
 	const start = performance.now()
 
 	const goos = PLATFORM_MAPPING[os.platform()]
@@ -48,7 +49,7 @@ export default async function buildBinary(inputDir, destDir, binName, dev) {
 	}
 
 	if (dev) {
-		runBuildCMD(inputDir, binDirPath, subDir, goos, goarch, binPath)
+		runBuildCMD(inputDir, binDirPath, subDir, goos, goarch, binPath, spaceMultiplier)
 		printElapsed(start, "[bin-utils] Build all binaries completed")
 		return
 	}
@@ -74,16 +75,19 @@ export default async function buildBinary(inputDir, destDir, binName, dev) {
 	printElapsed(start, `[bin-utils] Build ${binName} complete`)
 }
 
-async function runBuildCMD(inputDir, binDirPath, subDir, platform, arch, binPath) {
+async function runBuildCMD(inputDir, binDirPath, subDir, platform, arch, binPath, spaceMultiplier) {
 	if (!fs.existsSync(binDirPath)) {
 		mkdir(binDirPath)
 	}
 
 	cleanDir(binDirPath)
 
-	const stdout = execSync(`env GOOS=${platform} GOARCH=${arch} go build -o ${binPath}`, {
-		cwd: inputDir,
-	})
+	const stdout = execSync(
+		`env GOOS=${platform} GOARCH=${arch} go build -o ${binPath} --max-old-space-size=${2048 * spaceMultiplier}`,
+		{
+			cwd: inputDir,
+		},
+	)
 
 	if (stdout.toString()) {
 		process.stdout.write(`${stdout.toString()}\n`)
@@ -113,7 +117,7 @@ async function runBuildCMD(inputDir, binDirPath, subDir, platform, arch, binPath
  * @param {number} [spaceMultiplier] - pass a number to be multiplied by 2048 to increase potential RAM availability
  * @return {[stdout, stderr]}
  */
-export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 8) {
+export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 16) {
 	const goos = PLATFORM_MAPPING[os.platform()]
 	const goarch = ARCH_MAPPING[os.arch()]
 	const subDir = `${goos}-${goarch}`

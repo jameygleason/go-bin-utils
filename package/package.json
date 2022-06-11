@@ -6,16 +6,8 @@
 	"exports": {
 		".": "./main.js"
 	},
-	"scripts": {
-		"install:all": "sh ./.config/scripts/install.sh",
-		"install:clean": "sh ./.config/scripts/clean-install.sh",
-		"lint": "lint-staged --config .config/lint-staged.config.cjs",
-		"push": "sh ./.config/scripts/push.sh",
-		"patch": "cd package && npm run patch",
-		"minor": "cd package && npm run minor",
-		"postinstall": "rm -rf .config/husky && husky install .config/husky && husky add .config/husky/pre-commit \"npm run lint\""
-	},
 	"devDependencies": {
+		"@signalchain/utils": "^0.9.0",
 		"@types/node": "^17.0.42",
 		"@typescript-eslint/eslint-plugin": "^5.19.0",
 		"@typescript-eslint/parser": "^5.19.0",
@@ -26,8 +18,7 @@
 		"eslint-plugin-json": "^3.1.0",
 		"eslint-plugin-node": "^11.1.0",
 		"eslint-plugin-prettier": "^4.0.0",
-		"husky": "7.0.4",
-		"lint-staged": "^12.3.7",
+		"picocolors": "^1.0.0",
 		"prettier": "^2.6.2",
 		"tslib": "^2.3.1",
 		"typescript": "^4.6.3"

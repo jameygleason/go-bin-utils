@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"checkJs": true,
+		"allowSyntheticDefaultImports": true,
+		"allowUnreachableCode": true,
+		"esModuleInterop": true,
+		"baseUrl": ".",
+		"importHelpers": true,
+		"lib": ["es2019", "dom"],
+		"module": "es2020",
+		"moduleResolution": "node",
+		"noEmit": true,
+		"noImplicitThis": true,
+		"resolveJsonModule": false,
+		"skipLibCheck": true,
+		"strictNullChecks": true,
+		"target": "es2019",
+		"paths": {
+			"@signalchain/utils": ["node_modules/@signalchain/utils/dist"],
+			"@signalchain/utils/node": ["node_modules/@signalchain/utils/dist/node"]
+		}
+	},
+	"exclude": ["node_modules"]
+}

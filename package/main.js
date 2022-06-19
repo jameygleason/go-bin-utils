@@ -1,15 +1,19 @@
 // @ts-check
 import os from "os"
 import fs from "fs"
-import path from "path"
-import { execSync, spawn, spawnSync } from "child_process"
+import path, { dirname } from "path"
+import { execSync, spawnSync } from "child_process"
+import { Worker } from "worker_threads"
 import { performance } from "perf_hooks"
+import { fileURLToPath } from "url"
 import clr from "picocolors"
 import { cleanDir, mkdir, printElapsed } from "@signalchain/utils/node"
 
+const __dirname = dirname(fileURLToPath(import.meta.url))
+
 // Mapping between Node's "process.platform" to Golang's "$GOOS"
 // https://nodejs.org/api/process.html#process_process_platform
-const PLATFORM_MAPPING = {
+export const PLATFORM_MAPPING = {
 	darwin: "darwin",
 	freebsd: "freebsd",
 	linux: "linux",
@@ -18,7 +22,7 @@ const PLATFORM_MAPPING = {
 
 // Mapping from Node's "process.arch" to Golang's "$GOARCH"
 // https://nodejs.org/api/process.html#process_process_arch
-const ARCH_MAPPING = {
+export const ARCH_MAPPING = {
 	arm: "arm",
 	arm64: "arm64",
 	ia32: "386",
@@ -185,55 +189,23 @@ export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 4096) 
  * @param {string} logName - prefix logs (ex. [compiler])
  * @param {number} [spaceMultiplier] - pass a number to be multiplied by 1024 to increase heap size
  */
-export async function runPlatformBinAsync(cmd, cwd, args, logName, spaceMultiplier = 4096) {
-	const goos = PLATFORM_MAPPING[os.platform()]
-	const goarch = ARCH_MAPPING[os.arch()]
-	const subDir = `${goos}-${goarch}`
-	const binPath = path.join(cwd, subDir)
+export async function runPlatformBinInWorker(cmd, cwd, args, logName, spaceMultiplier = 4096) {
+	try {
+		// https://spectrumstutz.com/nodejs/nodejs-child-process-worker-threads/
+		const worker = new Worker(path.join(__dirname, "worker.js"))
 
-	const prog = spawn(path.join(binPath, cmd), [...args, `--max-old-space-size=${1024 * spaceMultiplier}`], {
-		cwd,
-	})
-
-	let data = ""
-	for await (const chunk of prog.stdout) {
-		data += chunk.toString()
-	}
-
-	if (data) {
-		process.stdout.write(`${clr.blue(logName)} ${data}\n`)
-	}
-
-	if (logName) {
-		prog.stderr.on("data", se => {
-			let err, ts
-			;[ts, err] = se.split("+~+~+")
-
-			if (ts && se.split("+~+~+").length === 2) {
-				const delim = ts.indexOf(".")
-				const nums = ts.split(/[a-zA-Zµ]/)[0]
-
-				let unit = ts.match(/[a-zA-Zµ]/gi)
-				if (!unit) {
-					// @ts-ignore
-					unit = "ms"
-				} else {
-					// @ts-ignore
-					unit = unit.join("")
-				}
-
-				console.log(
-					`${clr.blue(logName + " ran")} ${clr.green("in")} ${clr.blue(
-						nums.slice(0, delim + 2) + nums.slice(delim + 6, ts.length) + unit,
-					)}`,
-				)
-			} else {
-				console.error(clr.red(ts))
-			}
-
-			if (err) {
-				console.error(clr.red(err))
-			}
+		// Set worker thread event handlers
+		worker.on("message", result => {
+			console.log(`Outcome in Parent Thread : ${result}`)
 		})
+
+		worker.on("exit", code => {
+			console.log(`worker exited with code ${code}`)
+		})
+
+		// Post message to the worker thread.
+		worker.postMessage({ cmd, cwd, args, logName, spaceMultiplier })
+	} catch (err) {
+		console.error(err)
 	}
 }

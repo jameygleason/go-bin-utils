@@ -196,11 +196,11 @@ export async function runPlatformBinInWorker(cmd, cwd, args, logName, spaceMulti
 
 		// Set worker thread event handlers
 		worker.on("message", result => {
-			console.log(`Outcome in Parent Thread : ${result}`)
+			process.stdout.write(`${clr.blue(result)}\n`)
 		})
 
 		worker.on("exit", code => {
-			console.log(`worker exited with code ${code}`)
+			process.stdout.write(`Worker exited with code ${code}`)
 		})
 
 		// Post message to the worker thread.

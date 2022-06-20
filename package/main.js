@@ -41,13 +41,13 @@ export const ARCH_MAPPING = {
 // node --max-old-space-size=8192 index.js #increase to 8gb
 
 /**
+ * @param {string} binName - directory for built binaries
  * @param {string} inputDir - directory of main.go
  * @param {string} destDir - directory for built binaries
- * @param {string} binName - directory for built binaries
  * @param {boolean} dev - env is development
  * @param {number} [spaceMultiplier] - pass a number to be multiplied by 1024 to increase heap size
  */
-export default async function buildBinary(inputDir, destDir, binName, dev, spaceMultiplier = 4096) {
+export default async function buildBinary(binName, inputDir, destDir, dev, spaceMultiplier = 4096) {
 	const start = performance.now()
 
 	const goos = PLATFORM_MAPPING[os.platform()]
@@ -182,29 +182,40 @@ export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 4096) 
 	return [stdout?.toString(), stderr?.toString()]
 }
 
+let worker = null
+let initialized = false
+
 /**
  * @param {string} cmd
  * @param {string} cwd - current working directory
  * @param {Array<string>} args - command options
- * @param {string} logName - prefix logs (ex. [compiler])
  * @param {number} [spaceMultiplier] - pass a number to be multiplied by 1024 to increase heap size
  */
-export async function runPlatformBinInWorker(cmd, cwd, args, logName, spaceMultiplier = 4096) {
+export function runPlatformBinInWorker(cmd, cwd, args, spaceMultiplier = 4096) {
 	try {
+		if (worker) {
+			worker.postMessage({ cmd, cwd, args, spaceMultiplier, terminate: true })
+			initialized = false
+		}
+
 		// https://spectrumstutz.com/nodejs/nodejs-child-process-worker-threads/
-		const worker = new Worker(path.join(__dirname, "worker.js"))
+		worker = new Worker(path.join(__dirname, "worker.js"))
 
 		// Set worker thread event handlers
-		worker.on("message", result => {
-			process.stdout.write(`${clr.blue(result)}\n`)
+		worker.on("message", res => {
+			process.stdout.write(`${clr.blue(res)}\n`)
+			if (initialized) {
+				worker?.terminate()
+			}
+			initialized = true
 		})
 
 		worker.on("exit", code => {
-			process.stdout.write(`Worker exited with code ${code}`)
+			process.stdout.write(`Worker exited with code ${code}\n`)
 		})
 
 		// Post message to the worker thread.
-		worker.postMessage({ cmd, cwd, args, logName, spaceMultiplier })
+		worker.postMessage({ cmd, cwd, args, spaceMultiplier, terminate: false })
 	} catch (err) {
 		console.error(err)
 	}

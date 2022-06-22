@@ -1,8 +1,9 @@
 {
 	"name": "go-bin-utils",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"type": "module",
 	"main": "main.js",
+	"module": "main.js",
 	"exports": {
 		".": "./main.js"
 	},

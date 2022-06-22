@@ -88,7 +88,7 @@ export default async function buildBinary(binName, inputDir, destDir, dev, space
 	printElapsed(start, `[bin-utils] Build ${binName} complete`)
 }
 
-async function runBuildCMD(inputDir, binDirPath, subDir, platform, arch, binPath, spaceMultiplier) {
+async function runBuildCMD(inputDir, binDirPath, subDir, platform, arch, binPath, spaceMultiplier = 1) {
 	if (!fs.existsSync(binDirPath)) {
 		mkdir(binDirPath)
 	}

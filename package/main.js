@@ -52,17 +52,13 @@ export default async function buildBinary(binName, inputDir, destDir, dev, space
 
 	const goos = PLATFORM_MAPPING[os.platform()]
 	const goarch = ARCH_MAPPING[os.arch()]
-	const subDir = `${goos}-${goarch}`
-	const binDirPath = path.join(destDir, subDir)
-
-	let binPath = path.join(binDirPath, binName)
 
 	if (goos === "windows") {
-		binPath = path.join(binDirPath, `${binName}.exe`)
+		binName = `${binName}.exe`
 	}
 
 	if (dev) {
-		runBuildCMD(inputDir, binDirPath, subDir, goos, goarch, binPath, spaceMultiplier)
+		runBuildCMD(inputDir, destDir, binName, goos, goarch, spaceMultiplier)
 		printElapsed(start, `[bin-utils] Build ${binName} complete`)
 		return
 	}
@@ -81,19 +77,25 @@ export default async function buildBinary(binName, inputDir, destDir, dev, space
 				}
 			}
 
-			runBuildCMD(inputDir, binDirPath, subDir, platform, arch, binPath)
+			runBuildCMD(inputDir, destDir, binName, platform, arch)
 		}
 	}
 
 	printElapsed(start, `[bin-utils] Build ${binName} complete`)
 }
 
-async function runBuildCMD(inputDir, binDirPath, subDir, platform, arch, binPath, spaceMultiplier = 1) {
+async function runBuildCMD(inputDir, buildDirPath, binName, platform, arch, spaceMultiplier = 1) {
+	const subDir = `${platform}-${arch}`
+	const binDirPath = path.join(buildDirPath, subDir)
+	const binPath = path.join(binDirPath, binName)
+
+	if (fs.existsSync(binDirPath)) {
+		cleanDir(binDirPath)
+	}
+
 	if (!fs.existsSync(binDirPath)) {
 		mkdir(binDirPath)
 	}
-
-	cleanDir(binDirPath)
 
 	const proc = spawnSync("env", [`GOOS=${platform}`, `GOARCH=${arch}`, "go", "build", "-o", `${binPath}`], {
 		maxBuffer: 1024 * spaceMultiplier,

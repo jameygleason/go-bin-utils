@@ -1,5 +1,6 @@
 // @ts-check
 import os from "os"
+import fs from "fs"
 import path from "path"
 import { spawn } from "child_process"
 import { parentPort } from "worker_threads"
@@ -18,6 +19,10 @@ function worker({ cmd, cwd, args, spaceMultiplier, terminate }) {
 		const goarch = ARCH_MAPPING[os.arch()]
 		const subDir = `${goos}-${goarch}`
 		const binPath = path.join(cwd, subDir)
+
+		if (!fs.existsSync(path.join(binPath, cmd))) {
+			return
+		}
 
 		proc = spawn(path.join(binPath, cmd), [...args, `--max-old-space-size=${1024 * spaceMultiplier}`], {
 			cwd,

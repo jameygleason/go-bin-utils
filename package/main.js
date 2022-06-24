@@ -2,7 +2,7 @@
 import os from "os"
 import fs from "fs"
 import path, { dirname } from "path"
-import { execSync, spawnSync } from "child_process"
+import { spawnSync } from "child_process"
 import { Worker } from "worker_threads"
 import { performance } from "perf_hooks"
 import { fileURLToPath } from "url"
@@ -95,13 +95,17 @@ async function runBuildCMD(inputDir, binDirPath, subDir, platform, arch, binPath
 
 	cleanDir(binDirPath)
 
-	const stdout = execSync(`env GOOS=${platform} GOARCH=${arch} go build -o ${binPath}`, {
+	const proc = spawnSync("env", [`GOOS=${platform}`, `GOARCH=${arch}`, "go", "build", "-o", `${binPath}`], {
 		maxBuffer: 1024 * spaceMultiplier,
 		cwd: inputDir,
 	})
 
-	if (stdout.toString()) {
-		process.stdout.write(`${stdout.toString()}\n`)
+	if (proc.stdout.toString()) {
+		process.stdout.write(proc.stdout.toString() + "\n")
+	}
+
+	if (proc.stderr.toString()) {
+		process.stderr.write(proc.stderr.toString() + "\n")
 	}
 }
 
@@ -134,20 +138,21 @@ export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 4096) 
 	const subDir = `${goos}-${goarch}`
 	const binPath = path.join(cwd, subDir)
 
-	const { stdout, stderr } = spawnSync(
-		path.join(binPath, cmd),
-		[...args, `--max-old-space-size=${1024 * spaceMultiplier}`],
-		{
-			maxBuffer: 4096,
-			cwd,
-		},
-	)
-	if (!!stdout?.toString() === true) {
-		process.stdout.write(`${clr.blue(logName)} ${stdout.toString()}\n`)
+	if (!fs.existsSync(path.join(binPath, cmd))) {
+		return ["", ""]
 	}
 
-	if (!!stderr?.toString() === true && logName) {
-		const se = stderr.toString()
+	const proc = spawnSync(path.join(binPath, cmd), [...args, `--max-old-space-size=${1024 * spaceMultiplier}`], {
+		maxBuffer: 4096,
+		cwd,
+	})
+
+	if (!!proc.stdout?.toString() === true) {
+		process.stdout.write(`${clr.blue(logName)} ${proc.stdout.toString()}\n`)
+	}
+
+	if (!!proc.stderr?.toString() === true && logName) {
+		const se = proc.stderr.toString()
 
 		let err, ts
 		;[ts, err] = se.split("+~+~+")
@@ -165,10 +170,10 @@ export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 4096) 
 				unit = unit.join("")
 			}
 
-			console.log(
+			process.stdout.write(
 				`${clr.blue(logName + " ran")} ${clr.green("in")} ${clr.blue(
 					nums.slice(0, delim + 2) + nums.slice(delim + 6, ts.length) + unit,
-				)}`,
+				)}\n`,
 			)
 		} else {
 			console.error(clr.red(ts))
@@ -179,7 +184,7 @@ export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 4096) 
 		}
 	}
 
-	return [stdout?.toString(), stderr?.toString()]
+	return [proc.stdout?.toString(), proc.stderr?.toString()]
 }
 
 let worker = null

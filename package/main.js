@@ -134,7 +134,7 @@ async function runBuildCMD(inputDir, buildDirPath, binName, platform, arch, spac
  * @param {number} [spaceMultiplier] - pass a number to be multiplied by 1024 to increase heap size
  * @return {[stdout, stderr]}
  */
-export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 4096) {
+export function runPlatformBin(cmd, cwd, args, logName, printStdout, spaceMultiplier = 4096) {
 	const goos = PLATFORM_MAPPING[os.platform()]
 	const goarch = ARCH_MAPPING[os.arch()]
 	const subDir = `${goos}-${goarch}`
@@ -149,7 +149,7 @@ export function runPlatformBin(cmd, cwd, args, logName, spaceMultiplier = 4096) 
 		cwd,
 	})
 
-	if (!!proc.stdout?.toString() === true) {
+	if (!!proc.stdout?.toString() === true && printStdout) {
 		process.stdout.write(`${clr.blue(logName)} ${proc.stdout.toString()}\n`)
 	}
 

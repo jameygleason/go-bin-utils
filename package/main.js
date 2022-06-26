@@ -102,11 +102,11 @@ async function runBuildCMD(inputDir, buildDirPath, binName, platform, arch, spac
 		cwd: inputDir,
 	})
 
-	if (proc.stdout.toString()) {
+	if (proc?.stdout?.toString()) {
 		process.stdout.write(proc.stdout.toString() + "\n")
 	}
 
-	if (proc.stderr.toString()) {
+	if (proc?.stderr?.toString()) {
 		process.stderr.write(proc.stderr.toString() + "\n")
 	}
 }
